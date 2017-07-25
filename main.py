@@ -13,28 +13,35 @@ counter = 0
 
 py = Pytrack()
 l76 = L76GNSS(py, timeout=120)
-coords = (1, 1)
+coords = [None, None]
 coord_lock = _thread.allocate_lock()
 loop_guard = True
-print("lan: ", wl.ifconfig())
+# print("lan: ", wl.ifconfig())
 
-def get_coord():
+
+def get_coord(interval):
     """Get coords."""
-    interval = 1000
     times = Timer()
-    while True:
+    # while True:
+    for i in range(interval):
         times.start()
         with coord_lock:
-            coords = l76.coordinates()
-            print(coords)
+            coord = l76.coordinates()
+            coords[0] = coord[0]
+            coords[1] = coord[1]
         lap = times.stop()
         if lap < interval:
             time.sleep_ms(interval - lap)
     return
 
+def consumer(interval):
+    for i in range(interval):
+        with coord_lock:
+            print(coords)
+        time.sleep(2)
 
 def start():
-    """AAAH ."""
+    """Socket server start."""
     while True:
         c = None
         s = None
@@ -60,6 +67,6 @@ def start():
                 s.close()
             pycom.heartbeat(True)
 
-
-# _thread.start_new_thread(get_coord, ())
 # _thread.start_new_thread(start, ())
+# _thread.start_new_thread(get_coord, (5,))
+# _thread.start_new_thread(consumer, (5,))

@@ -35,5 +35,3 @@ if machine.reset_cause() != machine.SOFT_RESET: # needed to avoid losing connect
         wl.connect(net_to_use, (sec, pwd), timeout=10000)
     except:
         wl.init(mode=WLAN.AP, ssid=original_ssid, auth=original_auth, channel=6, antenna=WLAN.INT_ANT)
-
-1

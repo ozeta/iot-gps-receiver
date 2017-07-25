@@ -3,7 +3,7 @@ from machine import I2C
 import time
 import pycom
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 EXP_RTC_PERIOD = 7000
 
@@ -55,7 +55,6 @@ class Pytrack:
     PCON_ADDR = const(0x096)
     STATUS_ADDR = const(0x083)
 
-
     def __init__(self, i2c=None, sda='P22', scl='P21'):
         if i2c is not None:
             self.i2c = i2c
@@ -65,6 +64,10 @@ class Pytrack:
         self.scl = scl
         self.clk_cal_factor = 1
         self.reg = bytearray(6)
+        try:
+            self.read_fw_version()
+        except Exception:
+            time.sleep_ms(2)
         try:
             # init the ADC for the battery measurements
             self.poke_memory(ANSELC_ADDR, 1 << 2)
@@ -131,7 +134,10 @@ class Pytrack:
         self.magic_write_read(addr, _or=bits)
 
     def setup_sleep(self, time_s):
-        self.calibrate_rtc()
+        try:
+            self.calibrate_rtc()
+        except Exception:
+            pass
         time_s = int((time_s * self.clk_cal_factor) + 0.5)  # round to the nearest integer
         self._write(bytes([CMD_SETUP_SLEEP, time_s & 0xFF, (time_s >> 8) & 0xFF, (time_s >> 16) & 0xFF]))
 
@@ -145,6 +151,10 @@ class Pytrack:
         Pin('P3', mode=Pin.OUT, value=0)
 
     def calibrate_rtc(self):
+        # the 1.024 factor is because the PIC LF operates at 31 KHz
+        # WDT has a frequency divider to generate 1 ms
+        # and then there is a binary prescaler, e.g., 1, 2, 4 ... 512, 1024 ms
+        # hence the need for the constant
         self._write(bytes([CMD_CALIBRATE]), wait=False)
         self.i2c.deinit()
         Pin('P21', mode=Pin.IN)
@@ -152,7 +162,7 @@ class Pytrack:
         self.i2c.init(mode=I2C.MASTER, pins=(self.sda, self.scl))
         period = pulses[2][1] - pulses[0][1]
         if period > 0:
-            self.clk_cal_factor = (EXP_RTC_PERIOD / period) * 0.98
+            self.clk_cal_factor = (EXP_RTC_PERIOD / period) * (1000 / 1024)
 
     def button_pressed(self):
         button = self.peek_memory(PORTA_ADDR) & (1 << 3)
@@ -164,4 +174,4 @@ class Pytrack:
         while self.peek_memory(ADCON0_ADDR) & _ADCON0_GO_nDONE_MASK:
             time.sleep_us(100)
         adc_val = (self.peek_memory(ADRESH_ADDR) << 2) + (self.peek_memory(ADRESL_ADDR) >> 6)
-        return (((adc_val * 3.3 * 280) / 1023) / 180) + 0.01    # add 10mV to compensate for the drop in the FET
+        return (((adc_val * 3.3 * 280) / 1023) / 180) + 0.01 # add 10mV to compensate for the drop in the FET

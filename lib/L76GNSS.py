@@ -3,6 +3,7 @@ import time
 import gc
 import binascii
 
+
 class L76GNSS:
 
     GPS_I2CADDR = const(0x10)
