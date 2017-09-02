@@ -3,7 +3,6 @@ import time
 import gc
 import binascii
 
-
 class L76GNSS:
 
     GPS_I2CADDR = const(0x10)
@@ -41,6 +40,7 @@ class L76GNSS:
     def coordinates(self, debug=False):
         lat_d, lon_d, debug_timeout = None, None, False
         if self.timeout != None:
+            self.chrono.reset()
             self.chrono.start()
         nmea = b''
         while True:
@@ -66,6 +66,8 @@ class L76GNSS:
                     except Exception:
                         pass
                     finally:
+                        if debug:
+                            print(nmea)
                         nmea = nmea[(gngll_idx + e_idx):]
                         gc.collect()
                         break
@@ -80,3 +82,18 @@ class L76GNSS:
             return(None, None)
         else:
             return(lat_d, lon_d)
+
+    def rawloop(self, debug=False):
+        nmea = b''
+        # for i in (0, 64):
+        while True:
+            nmea = self._read().lstrip(b'\n\n').rstrip(b'\n\n')
+            if len(nmea) > 0:
+                print(nmea.decode('ascii'))
+            time.sleep(0.25)
+
+    def raw(self, debug=False):
+        # time.sleep(0.1)
+        str = self._read().lstrip(b'\r\n').rstrip(b'\r\n')
+        str.lstrip(b'\n\n').rstrip(b'\n\n')
+        return str

@@ -1,7 +1,6 @@
 import math
 import struct
 
-
 class LIS2HH12:
 
     ACC_I2CADDR = const(30)
