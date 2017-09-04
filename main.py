@@ -8,6 +8,7 @@
 # from machine import Timer
 
 import gc
+import pycom
 import time
 from L76GNSS import L76GNSS
 from pytrack import Pytrack
@@ -31,6 +32,7 @@ gps = MicropyGPS(location_formatting='dd')
 
 def loop(arg):
     """Loop."""
+    first_run = True
     # while True:
     for i in range(0, arg):
         # print("i: {}".format(i))
@@ -41,7 +43,14 @@ def loop(arg):
                 # if result == 'GPGGA':
             result = gps.update(x)
             if result == 'GNGLL' or result == 'GPGLL':
+                # if pycom.heartbeat() is False:
+                #     pycom.rgbled(0x000000)
                 print("i: {:6}/{}: @({},{},{})# {} sat: {}".format(i, arg, gps.latitude[0], gps.longitude[0], gps.altitude, gps.timestamp,gps.satellites_visible()))
+                if first_run is True and gps.latitude[0] != 0:
+                    pycom.heartbeat(False)
+                    pycom.rgbled(0x00ffcc)
+                    first_run = False
+
 
         gc.collect()
         with (stop_lock):
