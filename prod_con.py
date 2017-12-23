@@ -1,3 +1,7 @@
+################################################################
+#producer/consume example for wipy/mpython quick feature test 
+################################################################
+
 import time
 import _thread
 from timer import Timer as Timer
